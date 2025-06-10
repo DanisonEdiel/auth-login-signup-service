@@ -1,7 +1,9 @@
+import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
 from app.models.user import User
+from app.services.auth_service import auth_service
 
 
 def test_health_check(client: TestClient):

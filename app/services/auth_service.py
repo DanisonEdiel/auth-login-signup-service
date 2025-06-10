@@ -12,7 +12,7 @@ from app.core.security import create_access_token, verify_password
 from app.db.database import get_db
 from app.models.user import User
 from app.repositories.user_repository import user_repository
-from app.schemas.user import UserCreate, Token
+from app.schemas.user import UserCreate, Token, UserResponse
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login")
 

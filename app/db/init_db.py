@@ -3,8 +3,7 @@ from loguru import logger
 
 from sqlalchemy.ext.asyncio import AsyncEngine
 from app.db.database import engine, Base
-# Importación implícita para asegurar que los modelos se registren
-import app.models.user  # noqa
+from app.models.user import User
 
 
 async def create_tables(engine: AsyncEngine) -> None:
