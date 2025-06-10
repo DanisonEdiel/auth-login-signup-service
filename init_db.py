@@ -1,9 +1,12 @@
 import asyncio
 import logging
+from contextlib import asynccontextmanager
+
+from sqlalchemy import text
+from sqlalchemy.exc import ProgrammingError
 
 from app.db.database import Base, engine
-# Importación implícita para asegurar que los modelos se registren
-import app.models.user  # noqa
+from app.models.user import User  # Import all models to register them
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
