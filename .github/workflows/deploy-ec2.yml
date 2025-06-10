@@ -22,9 +22,9 @@ jobs:
         run: |
           cp .env.example .env
           # Configurar variables de entorno para producción
-          sed -i 's/MESSAGE_BROKER_URL=.*/MESSAGE_BROKER_URL=${{ secrets.MESSAGE_BROKER_URL || "kafka:9092" }}/g' .env
-          sed -i 's/JWT_SECRET=.*/JWT_SECRET=${{ secrets.JWT_SECRET || "generate-a-secure-random-key-for-production" }}/g' .env
-          sed -i 's|DATABASE_URL=.*|DATABASE_URL=${{ secrets.DATABASE_URL || "postgresql+asyncpg://auth_user:your-secure-password@your-rds-endpoint.region.rds.amazonaws.com:5432/auth_db" }}|g' .env
+          sed -i 's/MESSAGE_BROKER_URL=.*/MESSAGE_BROKER_URL=${MESSAGE_BROKER_URL:-kafka:9092}/g' .env
+          sed -i 's/JWT_SECRET=.*/JWT_SECRET=${JWT_SECRET:-generate-a-secure-random-key-for-production}/g' .env
+          sed -i 's|DATABASE_URL=.*|DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://auth_user:your-secure-password@your-rds-endpoint.region.rds.amazonaws.com:5432/auth_db}|g' .env
 
       - name: Create docker-compose.override.yml for production
         run: |
