@@ -63,7 +63,7 @@ jobs:
           script: |
             cd ~/app
             
-            # Asegurarse de que Docker está instalados
+            # Asegurarse de que Docker está instalado
             if ! command -v docker &> /dev/null; then
               echo "Docker no está instalado. Instalando..."
               sudo apt-get update
@@ -73,21 +73,39 @@ jobs:
               sudo apt-get update
               sudo apt-get install -y docker-ce docker-ce-cli containerd.io
               sudo usermod -aG docker $USER
+              # Iniciar el servicio de Docker
+              sudo systemctl start docker
+              sudo systemctl enable docker
             fi
             
-            # Asegurarse de que Docker Compose está instalado
-            if ! command -v docker-compose &> /dev/null; then
-              echo "Docker Compose no está instalado. Instalando..."
-              sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-              sudo chmod +x /usr/local/bin/docker-compose
+            # Docker Compose ya viene incluido con la instalación de Docker
+            # Verificar que docker compose funciona
+            if ! sudo docker compose version &> /dev/null; then
+              echo "Docker Compose no está funcionando correctamente. Instalando plugin..."
+              sudo apt-get update
+              sudo apt-get install -y docker-compose-plugin
             fi
+            
+            # Mostrar versiones instaladas
+            sudo docker --version
+            sudo docker compose version
             
             # Descargar la imagen más reciente
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:latest
+            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/auth-login-signup-service:latest
+            
+            # Crear directorio app si no existe
+            mkdir -p ~/app
+            
+            # Verificar que los archivos necesarios están presentes
+            ls -la ~/app
             
             # Desplegar con Docker Compose
-            docker-compose -f docker-compose.prod.yml -f docker-compose.override.yml down
-            docker-compose -f docker-compose.prod.yml -f docker-compose.override.yml up -d
+            cd ~/app
+            sudo docker compose -f docker-compose.prod.yml -f docker-compose.override.yml down || true
+            sudo docker compose -f docker-compose.prod.yml -f docker-compose.override.yml up -d
+            
+            # Verificar que los contenedores están corriendo
+            sudo docker ps
             
             # Limpiar imágenes no utilizadas
-            docker system prune -af
+            sudo docker system prune -af --volumes
