@@ -33,11 +33,16 @@ jobs:
           
           services:
             app:
-              image: ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:latest
+              image: ${{ secrets.DOCKERHUB_USERNAME }}auth-login-signup-service:latest
               restart: always
               pull_policy: always
           EOF
 
+      - name: Debug EC2 connection info
+        run: |
+          echo "Attempting to connect to EC2 instance..."
+          echo "Host: ${{ secrets.EC2_HOST }}"
+          echo "Username: ${{ secrets.EC2_USERNAME }}"
       - name: Copy files to EC2
         uses: appleboy/scp-action@master
         with:
@@ -47,6 +52,7 @@ jobs:
           source: ".env,docker-compose.prod.yml,docker-compose.override.yml"
           target: "~/app"
           strip_components: 0
+          debug: true
 
       - name: Deploy application
         uses: appleboy/ssh-action@master
