@@ -22,9 +22,9 @@ jobs:
         run: |
           cp .env.example .env
           # Configurar variables de entorno para producción
-          sed -i 's/MESSAGE_BROKER_URL=.*/MESSAGE_BROKER_URL=${MESSAGE_BROKER_URL:-kafka:9092}/g' .env
-          sed -i 's/JWT_SECRET=.*/JWT_SECRET=${JWT_SECRET:-generate-a-secure-random-key-for-production}/g' .env
-          sed -i 's|DATABASE_URL=.*|DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://auth_user:your-secure-password@your-rds-endpoint.region.rds.amazonaws.com:5432/auth_db}|g' .env
+          sed -i "s|MESSAGE_BROKER_URL=.*|MESSAGE_BROKER_URL=${MESSAGE_BROKER_URL:-kafka:9092}|g" .env
+          sed -i "s|JWT_SECRET=.*|JWT_SECRET=${JWT_SECRET:-generate-a-secure-random-key-for-production}|g" .env
+          sed -i "s|DATABASE_URL=.*|DATABASE_URL=${DATABASE_URL:-postgresql://auth_user:your-secure-password@your-rds-endpoint.region.rds.amazonaws.com:5432/auth_db}|g" .env
 
       - name: Create docker-compose.override.yml for production
         run: |
@@ -33,7 +33,7 @@ jobs:
           
           services:
             app:
-              image: ${{ secrets.DOCKERHUB_USERNAME }}auth-login-signup-service:latest
+              image: ${{ secrets.DOCKERHUB_USERNAME }}/auth-login-signup-service:latest
               restart: always
               pull_policy: always
           EOF
@@ -101,11 +101,13 @@ jobs:
             
             # Desplegar con Docker Compose
             cd ~/app
-            sudo docker compose -f docker-compose.prod.yml -f docker-compose.override.yml down || true
+            # Detener solo si existe el contenedor, sin eliminar volúmenes
+            sudo docker compose -f docker-compose.prod.yml -f docker-compose.override.yml stop || true
+            # Iniciar o recrear contenedores
             sudo docker compose -f docker-compose.prod.yml -f docker-compose.override.yml up -d
             
             # Verificar que los contenedores están corriendo
             sudo docker ps
             
-            # Limpiar imágenes no utilizadas
-            sudo docker system prune -af --volumes
+            # Limpiar solo imágenes no utilizadas (sin forzar y sin borrar volúmenes)
+            sudo docker image prune -a --filter "until=24h"
