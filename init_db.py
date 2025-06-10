@@ -6,7 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 
 from app.db.database import Base, engine
-from app.models.user import User  # Import all models to register them
+from app.models.user import User  # Import all models to register the
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
