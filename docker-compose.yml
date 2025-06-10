@@ -9,7 +9,7 @@ services:
       - postgres
       - kafka
     environment:
-      - DATABASE_URL=postgresql://auth_user:secret@postgres:5432/auth_db
+  - DATABASE_URL=postgresql://postgres:Uzumymw260916_@auth-db.cjmeisum20y.us-east-1.rds.amazonaws.com:5432/auth_db
       - JWT_SECRET=development-jwt-secret
       - MESSAGE_BROKER_URL=kafka://kafka:9092
     volumes:
