@@ -1,0 +1,84 @@
+name: Deploy to EC2
+
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:  # También se puede ejecutar manualmente
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create .env file
+        run: |
+          cp .env.example .env
+          # Configurar variables de entorno para producción
+          sed -i 's/MESSAGE_BROKER_URL=.*/MESSAGE_BROKER_URL=${{ secrets.MESSAGE_BROKER_URL || "kafka:9092" }}/g' .env
+          sed -i 's/JWT_SECRET=.*/JWT_SECRET=${{ secrets.JWT_SECRET || "generate-a-secure-random-key-for-production" }}/g' .env
+          sed -i 's|DATABASE_URL=.*|DATABASE_URL=${{ secrets.DATABASE_URL || "postgresql+asyncpg://auth_user:your-secure-password@your-rds-endpoint.region.rds.amazonaws.com:5432/auth_db" }}|g' .env
+
+      - name: Create docker-compose.override.yml for production
+        run: |
+          cat > docker-compose.override.yml << EOF
+          version: "3.8"
+          
+          services:
+            app:
+              image: ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:latest
+              restart: always
+              pull_policy: always
+          EOF
+
+      - name: Copy files to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME || 'ec2-user' }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: ".env,docker-compose.prod.yml,docker-compose.override.yml"
+          target: "~/app"
+          strip_components: 0
+
+      - name: Deploy application
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME || 'ec2-user' }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/app
+            
+            # Asegurarse de que Docker está instalado
+            if ! command -v docker &> /dev/null; then
+              echo "Docker no está instalado. Instalando..."
+              sudo yum update -y
+              sudo amazon-linux-extras install docker -y
+              sudo service docker start
+              sudo usermod -a -G docker $USER
+            fi
+            
+            # Asegurarse de que Docker Compose está instalado
+            if ! command -v docker-compose &> /dev/null; then
+              echo "Docker Compose no está instalado. Instalando..."
+              sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+            fi
+            
+            # Descargar la imagen más reciente
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:latest
+            
+            # Desplegar con Docker Compose
+            docker-compose -f docker-compose.prod.yml -f docker-compose.override.yml down
+            docker-compose -f docker-compose.prod.yml -f docker-compose.override.yml up -d
+            
+            # Limpiar imágenes no utilizadas
+            docker system prune -af
