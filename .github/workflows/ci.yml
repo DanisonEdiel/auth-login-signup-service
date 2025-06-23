@@ -73,17 +73,19 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+        # Aumentar el tiempo de espera para evitar errores de conexión
+        timeout-minutes: 10
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:latest,${{ secrets.DOCKERHUB_USERNAME }}/auth-service:${{ github.sha }}
+          tags: danisonediel/auth-login-signup-service:latest,danisonediel/auth-login-signup-service:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
       - name: Test Docker image
         run: |
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:latest
-          docker run --rm ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:latest python -c "import sys; print(f'Python {sys.version}')"
+          docker pull danisonediel/auth-login-signup-service:latest
+          docker run --rm danisonediel/auth-login-signup-service:latest python -c "import sys; print(f'Python {sys.version}')"
