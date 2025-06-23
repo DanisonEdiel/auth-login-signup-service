@@ -5,7 +5,7 @@ from typing import Optional
 
 from app.db.database import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse, Token, TokenValidationResponse
+from app.schemas.user import UserCreate, UserResponse, Token, TokenValidationResponse, TokenValidationRequest
 from app.services.auth_service import auth_service
 
 router = APIRouter()
