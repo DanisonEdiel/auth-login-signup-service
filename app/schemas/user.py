@@ -44,3 +44,15 @@ class TokenPayload(BaseModel):
     """Schema for token payload"""
     sub: str
     exp: datetime
+
+
+class TokenValidationRequest(BaseModel):
+    """Schema for token validation request"""
+    token: str
+
+
+class TokenValidationResponse(BaseModel):
+    """Schema for token validation response"""
+    valid: bool
+    userId: Optional[str] = None
+    roles: list = []

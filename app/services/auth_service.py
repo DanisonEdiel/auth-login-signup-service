@@ -97,6 +97,39 @@ class AuthService:
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
             )
         return user
+        
+    async def validate_token(self, db: Session, token: str) -> tuple:
+        """
+        Validate JWT token and return user and roles if valid
+        """
+        credentials_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        try:
+            payload = jwt.decode(
+                token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
+            )
+            user_id: str = payload.get("sub")
+            if user_id is None:
+                raise credentials_exception
+                
+            user = user_repository.get_by_id(db, user_id=user_id)
+            if user is None:
+                raise credentials_exception
+            if not user.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
+                )
+            
+            # En este ejemplo, asumimos que los roles podrían estar en el token
+            # o asignamos un rol por defecto si no hay información de roles
+            roles = payload.get("roles", ["USER"])
+            
+            return user, roles
+        except JWTError:
+            raise credentials_exception
 
 
 # Singleton instance
