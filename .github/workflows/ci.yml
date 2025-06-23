@@ -81,11 +81,11 @@ jobs:
         with:
           context: .
           push: true
-          tags: danisonediel/auth-login-signup-service:latest,danisonediel/auth-login-signup-service:${{ github.sha }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/auth-login-signup-service:latest,${{ secrets.DOCKERHUB_USERNAME }}/auth-login-signup-service:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
       - name: Test Docker image
         run: |
-          docker pull danisonediel/auth-login-signup-service:latest
-          docker run --rm danisonediel/auth-login-signup-service:latest python -c "import sys; print(f'Python {sys.version}')"
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/auth-login-signup-service:latest
+          docker run --rm ${{ secrets.DOCKERHUB_USERNAME }}/auth-login-signup-service:latest python -c "import sys; print(f'Python {sys.version}')"
