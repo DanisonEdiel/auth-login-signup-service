@@ -57,13 +57,22 @@ jobs:
             sudo docker --version
             sudo docker compose version
             
-            # Forzar eliminación de contenedores e imágenes
+            # Verificar si hay contenedores ejecutándose
+            echo "Contenedores actuales:"
+            sudo docker ps -a
+            
+            # Detener y eliminar contenedores existentes
+            echo "Deteniendo contenedores existentes..."
             sudo docker compose down || true
             sudo docker rm -f app auth-db || true
-            sudo docker rmi -f danisonediel/auth-login-signup-service:latest || true
+            
+            # Eliminar imágenes antiguas
+            echo "Eliminando imágenes antiguas..."
+            sudo docker rmi -f ${{ secrets.DOCKERHUB_USERNAME }}/auth-login-signup-service:latest || true
             
             # Forzar pull de la imagen más reciente
-            sudo docker pull danisonediel/auth-login-signup-service:latest
+            echo "Descargando imagen más reciente..."
+            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/auth-login-signup-service:latest
             
             # Crear .env file con secretos
             cat > .env << EOL
@@ -73,12 +82,13 @@ jobs:
             EOL
             
             # Crear o actualizar docker-compose.yml
+            echo "Creando docker-compose.yml..."
             cat > docker-compose.yml << EOL
             version: "3.8"
             
             services:
               app:
-                image: danisonediel/auth-login-signup-service:latest
+                image: ${{ secrets.DOCKERHUB_USERNAME }}/auth-login-signup-service:latest
                 container_name: app
                 restart: always
                 ports:
@@ -111,11 +121,30 @@ jobs:
                 name: auth-network
             EOL
             
+            # Mostrar el contenido del archivo docker-compose.yml
+            echo "Contenido de docker-compose.yml:"
+            cat docker-compose.yml
+            
             # Crear red si no existe
+            echo "Creando red si no existe..."
             sudo docker network inspect auth-network >/dev/null 2>&1 || sudo docker network create auth-network
             
             # Iniciar servicios con recreación forzada
+            echo "Iniciando servicios..."
             sudo docker compose up -d --force-recreate
             
+            # Esperar a que los contenedores estén en funcionamiento
+            echo "Esperando a que los contenedores estén en funcionamiento..."
+            sleep 10
+            
             # Mostrar contenedores en ejecución
+            echo "Contenedores en ejecución:"
             sudo docker ps
+            
+            # Mostrar logs de los contenedores
+            echo "Logs del contenedor app:"
+            sudo docker logs app || echo "No se pudo obtener logs del contenedor app"
+            
+            # Verificar que la aplicación responde
+            echo "Verificando que la aplicación responde..."
+            curl -s http://localhost:8000/auth/health || echo "La aplicación no responde en el puerto 8000"
