@@ -118,24 +118,33 @@ jobs:
             
             networks:
               auth-network:
-                name: auth-network
+                driver: bridge
             EOL
             
             # Mostrar el contenido del archivo docker-compose.yml
             echo "Contenido de docker-compose.yml:"
             cat docker-compose.yml
             
-            # Crear red si no existe
-            echo "Creando red si no existe..."
-            sudo docker network inspect auth-network >/dev/null 2>&1 || sudo docker network create auth-network
+            # Eliminar la red existente si hay problemas
+            echo "Eliminando red existente si existe..."
+            sudo docker network rm auth-network || true
+            
+            # Eliminar docker-compose.override.yml si existe
+            echo "Eliminando docker-compose.override.yml si existe..."
+            rm -f docker-compose.override.yml
             
             # Iniciar servicios con recreación forzada
             echo "Iniciando servicios..."
+            sudo docker compose down --volumes || true
             sudo docker compose up -d --force-recreate
             
             # Esperar a que los contenedores estén en funcionamiento
             echo "Esperando a que los contenedores estén en funcionamiento..."
-            sleep 10
+            sleep 20
+            
+            # Verificar estado de los contenedores
+            echo "Estado de los contenedores:"
+            sudo docker container ls -a
             
             # Mostrar contenedores en ejecución
             echo "Contenedores en ejecución:"
@@ -148,3 +157,12 @@ jobs:
             # Verificar que la aplicación responde
             echo "Verificando que la aplicación responde..."
             curl -s http://localhost:8000/auth/health || echo "La aplicación no responde en el puerto 8000"
+            
+            # Mostrar información de depuración adicional
+            echo "Información de depuración:"
+            echo "Redes Docker:"
+            sudo docker network ls
+            echo "Volúmenes Docker:"
+            sudo docker volume ls
+            echo "Logs detallados del contenedor app (últimas 50 líneas):"
+            sudo docker logs app --tail 50 || echo "No se pudo obtener logs del contenedor app"
