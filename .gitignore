@@ -39,6 +39,13 @@ ENV/
 .env
 .terraform/
 
+# AWS credentials
+set-aws-credentials.ps1
+*.tfvars
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
 # Logs
 logs/
 *.log
