@@ -1,0 +1,11 @@
+{
+  "name": "associate-eip-lambda",
+  "version": "1.0.0",
+  "description": "Función Lambda para asociar Elastic IPs a instancias EC2",
+  "main": "index.js",
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.1030.0"
+  }
+}
