@@ -13,7 +13,7 @@ class User(Base):
     User model for storing user data
     """
     __tablename__ = "users"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, unique=True, nullable=False, index=True)
     username = Column(String, unique=True, nullable=True, index=True)
@@ -23,6 +23,6 @@ class User(Base):
     is_superuser = Column(Boolean(), default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     def __repr__(self) -> str:
         return f"<User {self.email}>"

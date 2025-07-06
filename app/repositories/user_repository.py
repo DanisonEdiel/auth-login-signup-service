@@ -12,25 +12,25 @@ class UserRepository:
     """
     Repository for User model to handle database operations
     """
-    
+
     def get_by_id(self, db: Session, user_id: UUID) -> Optional[User]:
         """
         Get user by ID
         """
         return db.query(User).filter(User.id == user_id).first()
-    
+
     def get_by_email(self, db: Session, email: str) -> Optional[User]:
         """
         Get user by email
         """
         return db.query(User).filter(User.email == email).first()
-    
+
     def get_by_username(self, db: Session, username: str) -> Optional[User]:
         """
         Get user by username
         """
         return db.query(User).filter(User.username == username).first()
-    
+
     def create(self, db: Session, user_in: UserCreate) -> User:
         """
         Create a new user

@@ -14,14 +14,14 @@ class EventPublisher:
     def __init__(self):
         self.producer = None
         self.connected = False
-    
+
     async def connect(self) -> None:
         """
         Connect to Kafka broker
         """
         if self.connected:
             return
-        
+
         try:
             # Extract Kafka connection info from settings
             broker_url = settings.MESSAGE_BROKER_URL.replace("kafka://", "")
@@ -34,7 +34,7 @@ class EventPublisher:
         except Exception as e:
             logger.error(f"Failed to connect to Kafka broker: {e}")
             self.connected = False
-    
+
     async def disconnect(self) -> None:
         """
         Disconnect from Kafka broker
@@ -43,7 +43,7 @@ class EventPublisher:
             await self.producer.stop()
             self.connected = False
             logger.info("Disconnected from Kafka broker")
-    
+
     async def publish_event(self, topic: str, event_data: Dict[str, Any]) -> bool:
         """
         Publish an event to Kafka
@@ -52,7 +52,7 @@ class EventPublisher:
             await self.connect()
             if not self.connected:
                 return False
-        
+
         try:
             value = json.dumps(event_data).encode("utf-8")
             await self.producer.send_and_wait(topic, value)
@@ -61,7 +61,7 @@ class EventPublisher:
         except Exception as e:
             logger.error(f"Failed to publish event: {e}")
             return False
-    
+
     async def publish_user_registered(self, user_data: Dict[str, Any]) -> bool:
         """
         Publish a user registered event

@@ -18,13 +18,13 @@ foreach ($dir in $dirsToArchive) {
     if (Test-Path $dir) {
         $dirName = Split-Path $dir -Leaf
         $destPath = Join-Path $archiveDir $dirName
-        
+
         # Si ya existe un directorio con el mismo nombre en el archivo, añadir timestamp
         if (Test-Path $destPath) {
             $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
             $destPath = "$destPath-$timestamp"
         }
-        
+
         # Mover el directorio
         Move-Item -Path $dir -Destination $destPath
         Write-Host "Movido: $dir -> $destPath"

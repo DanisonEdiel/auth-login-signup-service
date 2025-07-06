@@ -13,7 +13,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -78,7 +78,22 @@ jobs:
             cat > .env << EOL
             MESSAGE_BROKER_URL=${{ secrets.MESSAGE_BROKER_URL || 'kafka:9092' }}
             JWT_SECRET=${{ secrets.JWT_SECRET || 'generate-a-secure-random-key-for-production' }}
-            DATABASE_URL=${{ secrets.DATABASE_URL || 'postgresql://postgres:Uzumymw260916_@auth-db.cjmeisumz0yg.us-east-1.rds.amazonaws.com:5432/auth_db' }}
+            DATABASE_URL=${{ secrets.DATABASE_URL || 'postgresql://postgres:Uzumymw260916_@auth-db.cyllotifqg8b.us-east-1.rds.amazonaws.com:5432/auth_db' }}
+            
+            # Configuración para envío de correos
+            SMTP_SERVER=${{ secrets.SMTP_SERVER || 'masapantaandres@gmail.com' }}
+            SMTP_PORT=${{ secrets.SMTP_PORT || '587' }}
+            SMTP_USER=${{ secrets.SMTP_USER || 'EDLLT' }}
+            SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD || 'czsexcfrxnctdpbp' }}
+            SMTP_SENDER=${{ secrets.SMTP_SENDER || 'noreply@example.com' }}
+            SMTP_TLS=true
+            
+            # Configuración para Grafana Cloud
+            GRAFANA_ENABLED=true
+            GRAFANA_HOST=${{ secrets.GRAFANA_HOST || 'danisonediel.grafana.net' }}
+            # No se necesita puerto para Grafana Cloud (usa HTTPS)
+            GRAFANA_API_KEY=${{ secrets.GRAFANA_API_KEY }}
+            ENVIRONMENT=${{ secrets.ENVIRONMENT || 'production' }}
             EOL
             
             # Crear o actualizar docker-compose.yml
