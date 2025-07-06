@@ -1,0 +1,21 @@
+fastapi>=0.100.0
+uvicorn>=0.22.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.6
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.6
+loguru>=0.7.0
+prometheus-fastapi-instrumentator>=6.1.0  # Para métricas compatibles con Grafana Cloud
+requests>=2.31.0  # Para Grafana API
+slowapi>=0.1.7
+aiokafka>=0.8.1
+pytest>=7.3.1
+httpx>=0.24.1
+ruff>=0.0.270
+asyncpg>=0.27.0
+email-validator>=2.0.0
+# Para envío de correos
+aiosmtplib>=2.0.0

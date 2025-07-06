@@ -1,0 +1,183 @@
+name: Deploy to EC2
+
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:  # También se puede ejecutar manualmente
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy application
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          timeout: 180s
+          command_timeout: 20m
+          script_stop: true
+          debug: true
+          script: |
+            cd ~/app
+            
+            # Asegurarse de que Docker está instalado
+            if ! command -v docker &> /dev/null; then
+              echo "Docker no está instalado. Instalando..."
+              sudo apt-get update
+              sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+              sudo add-apt-repository "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+              sudo apt-get update
+              sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+              sudo usermod -aG docker $USER
+              sudo systemctl start docker
+              sudo systemctl enable docker
+            fi
+            
+            # Verificar que docker compose funciona
+            if ! sudo docker compose version &> /dev/null; then
+              echo "Docker Compose no está funcionando correctamente. Instalando plugin..."
+              sudo apt-get update
+              sudo apt-get install -y docker-compose-plugin
+            fi
+            
+            # Mostrar versiones instaladas
+            sudo docker --version
+            sudo docker compose version
+            
+            # Verificar si hay contenedores ejecutándose
+            echo "Contenedores actuales:"
+            sudo docker ps -a
+            
+            # Detener y eliminar contenedores existentes
+            echo "Deteniendo contenedores existentes..."
+            sudo docker compose down || true
+            sudo docker rm -f app auth-db || true
+            
+            # Eliminar imágenes antiguas
+            echo "Eliminando imágenes antiguas..."
+            sudo docker rmi -f ${{ secrets.DOCKERHUB_USERNAME }}/auth-login-signup-service:latest || true
+            
+            # Forzar pull de la imagen más reciente
+            echo "Descargando imagen más reciente..."
+            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/auth-login-signup-service:latest
+            
+            # Crear .env file con secretos
+            cat > .env << EOL
+            MESSAGE_BROKER_URL=${{ secrets.MESSAGE_BROKER_URL || 'kafka:9092' }}
+            JWT_SECRET=${{ secrets.JWT_SECRET || 'generate-a-secure-random-key-for-production' }}
+            DATABASE_URL=${{ secrets.DATABASE_URL || 'postgresql://postgres:Uzumymw260916_@auth-db.cyllotifqg8b.us-east-1.rds.amazonaws.com:5432/auth_db' }}
+            
+            # Configuración para envío de correos
+            SMTP_SERVER=${{ secrets.SMTP_SERVER || 'masapantaandres@gmail.com' }}
+            SMTP_PORT=${{ secrets.SMTP_PORT || '587' }}
+            SMTP_USER=${{ secrets.SMTP_USER || 'EDLLT' }}
+            SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD || 'czsexcfrxnctdpbp' }}
+            SMTP_SENDER=${{ secrets.SMTP_SENDER || 'noreply@example.com' }}
+            SMTP_TLS=true
+            
+            # Configuración para Grafana Cloud
+            GRAFANA_ENABLED=true
+            GRAFANA_HOST=${{ secrets.GRAFANA_HOST || 'danisonediel.grafana.net' }}
+            # No se necesita puerto para Grafana Cloud (usa HTTPS)
+            GRAFANA_API_KEY=${{ secrets.GRAFANA_API_KEY }}
+            ENVIRONMENT=${{ secrets.ENVIRONMENT || 'production' }}
+            EOL
+            
+            # Crear o actualizar docker-compose.yml
+            echo "Creando docker-compose.yml..."
+            cat > docker-compose.yml << EOL
+            version: "3.8"
+            
+            services:
+              app:
+                image: ${{ secrets.DOCKERHUB_USERNAME }}/auth-login-signup-service:latest
+                container_name: app
+                restart: always
+                ports:
+                  - "8000:8000"
+                env_file:
+                  - .env
+                networks:
+                  - auth-network
+              
+              postgres:
+                image: postgres:14
+                container_name: auth-db
+                restart: always
+                environment:
+                  POSTGRES_DB: auth_db
+                  POSTGRES_USER: postgres
+                  POSTGRES_PASSWORD: Uzumymw260916_
+                ports:
+                  - "5432:5432"
+                volumes:
+                  - postgres-data:/var/lib/postgresql/data
+                networks:
+                  - auth-network
+            
+            volumes:
+              postgres-data:
+            
+            networks:
+              auth-network:
+                driver: bridge
+            EOL
+            
+            # Mostrar el contenido del archivo docker-compose.yml
+            echo "Contenido de docker-compose.yml:"
+            cat docker-compose.yml
+            
+            # Eliminar la red existente si hay problemas
+            echo "Eliminando red existente si existe..."
+            sudo docker network rm auth-network || true
+            
+            # Eliminar docker-compose.override.yml si existe
+            echo "Eliminando docker-compose.override.yml si existe..."
+            rm -f docker-compose.override.yml
+            
+            # Iniciar servicios con recreación forzada
+            echo "Iniciando servicios..."
+            sudo docker compose down --volumes || true
+            sudo docker compose up -d --force-recreate
+            
+            # Esperar a que los contenedores estén en funcionamiento
+            echo "Esperando a que los contenedores estén en funcionamiento..."
+            sleep 20
+            
+            # Verificar estado de los contenedores
+            echo "Estado de los contenedores:"
+            sudo docker container ls -a
+            
+            # Mostrar contenedores en ejecución
+            echo "Contenedores en ejecución:"
+            sudo docker ps
+            
+            # Mostrar logs de los contenedores
+            echo "Logs del contenedor app:"
+            sudo docker logs app || echo "No se pudo obtener logs del contenedor app"
+            
+            # Verificar que la aplicación responde
+            echo "Verificando que la aplicación responde..."
+            curl -s http://localhost:8000/auth/health || echo "La aplicación no responde en el puerto 8000"
+            
+            # Mostrar información de depuración adicional
+            echo "Información de depuración:"
+            echo "Redes Docker:"
+            sudo docker network ls
+            echo "Volúmenes Docker:"
+            sudo docker volume ls
+            echo "Logs detallados del contenedor app (últimas 50 líneas):"
+            sudo docker logs app --tail 50 || echo "No se pudo obtener logs del contenedor app"

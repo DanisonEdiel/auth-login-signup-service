@@ -1,0 +1,22 @@
+# Ejemplo de terraform.tfvars - NO subir este archivo a git
+# Renombrar a terraform.tfvars para uso local
+
+# Credenciales AWS
+aws_region            = "us-east-1"
+aws_access_key_id     = "tu_access_key_id"
+aws_secret_access_key = "tu_secret_access_key"
+aws_session_token     = ""  # Solo si usas credenciales temporales
+
+# Configuración de la aplicación
+app_name           = "auth-service-ec2-new"
+environment        = "dev"
+image_tag          = "latest"
+ecr_repository_url = "danisonediel/auth-login-signup-service"  # Ajusta según tu repositorio
+
+# Credenciales y secretos
+db_password   = "tu_contraseña_segura"
+jwt_secret    = "tu_secreto_jwt"
+ssh_public_key = "ssh-rsa AAAA..."  # Tu clave pública SSH
+
+# Configuración de escalado
+desired_capacity = 1
