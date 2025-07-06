@@ -1,152 +1,152 @@
 # Auth Login/Signup Service
 
-Microservicio construido con FastAPI para gestionar autenticación y registro de usuarios.
+Microservice built with FastAPI to manage user authentication and registration.
 
-## Características
+## Features
 
-- Registro de usuarios (signup)
-- Autenticación de usuarios (login) con JWT
-- Endpoint de health check
-- Encriptación de contraseñas con bcrypt
-- Limitación de tasa para protección contra ataques de fuerza bruta
-- Arquitectura basada en eventos (integración con Kafka)
-- Métricas Prometheus para observabilidad
-- Logging estructurado
-- Soporte asíncrono para base de datos con SQLAlchemy
+- User registration (signup)
+- User authentication (login) with JWT
+- Health check endpoint
+- Password encryption with bcrypt
+- Rate limiting to protect against brute-force attacks
+- Event-driven architecture (integration with Kafka)
+- Prometheus metrics for observability
+- Structured logging
+- Asynchronous database support with SQLAlchemy
 
-## Requisitos
+## Requirements
 
 - Python 3.11+
-- PostgreSQL database (RDS en producción)
+- PostgreSQL database (RDS in production)
 - Kafka
 
-## Preparación para Producción en EC2
+## Preparing for Production on EC2
 
-### 1. Configuración de Base de Datos RDS
+### 1. RDS Database Configuration
 
-#### Estructura de la tabla `users`
+#### Structure of the `users` table
 
-La tabla `users` debe tener la siguiente estructura en PostgreSQL:
+The `users` table must have the following structure in PostgreSQL:
 
 ```sql
 CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR NOT NULL UNIQUE,
-    username VARCHAR UNIQUE,
-    hashed_password VARCHAR NOT NULL,
-    full_name VARCHAR,
-    is_active BOOLEAN DEFAULT TRUE,
-    is_superuser BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+email VARCHAR NOT NULL UNIQUE, 
+username VARCHAR UNIQUE, 
+hashed_password VARCHAR NOT NULL, 
+full_name VARCHAR, 
+is_active BOOLEAN DEFAULT TRUE, 
+is_superuser BOOLEAN DEFAULT FALSE, 
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_username ON users(username);
 ```
 
-> **Nota**: La aplicación puede crear automáticamente las tablas al iniciar si tiene los permisos adecuados.
+> **Note**: The application can automatically create the tables on startup if you have the appropriate permissions.
 
-### 2. Variables de Entorno
+### 2. Environment Variables
 
-Copia `.env.example` a `.env` y ajusta los valores para producción:
+Copy `.env.example` to `.env` and adjust the values ​​for production:
 
 ```bash
-# Database - Actualiza con tu endpoint de RDS
+# Database - Update with your RDS endpoint
 DATABASE_URL=postgresql+asyncpg://auth_user:your-secure-password@your-rds-endpoint.region.rds.amazonaws.com:5432/auth_db
 
-# JWT - Genera una clave segura para producción
+# JWT - Generate a secure key for production
 JWT_SECRET=generate-a-secure-random-key-for-production
 
-# Message Broker - Actualiza con tu broker de Kafka
+# Message Broker - Update with your Kafka broker
 MESSAGE_BROKER_URL=kafka://your-kafka-broker:9092
 ```
 
-### 3. Despliegue en EC2
+### 3. Deploy to EC2
 
-#### Opción 1: Despliegue con Docker
+#### Option 1: Deploy with Docker
 
 ```bash
-# 1. Clona el repositorio en tu instancia EC2
-git clone <tu-repositorio> auth-service
+# 1. Clone the repository to your EC2 instance
+git clone <your-repository> auth-service
 cd auth-service
 
-# 2. Crea el archivo .env con tus variables de entorno
+# 2. Create the .env file with your environment variables
 cp .env.example .env
-# Edita el archivo .env con tus valores de producción
+# Edit the .env file with your production values
 
-# 3. Construye y despliega con Docker Compose
+# 3. Build and deploy with Docker Compose
 docker-compose -f docker-compose.prod.yml up -d
 
-# 4. Verifica que los contenedores estén funcionando
+# 4. Verify that the containers are running
 docker ps
 
-# 5. Revisa los logs si es necesario
+# 5. Review the logs if necessary
 docker-compose logs -f app
 ```
 
-#### Opción 2: Despliegue sin Docker
+#### Option 2: Deployment without Docker
 
 ```bash
-# 1. Clona el repositorio en tu instancia EC2
-git clone <tu-repositorio> auth-service
+# 1. Clone the repository to your EC2 instance
+git clone <your-repository> auth-service
 cd auth-service
 
-# 2. Crea un entorno virtual
+# 2. Create a virtual environment
 python -m venv venv
 
-# 3. Activa el entorno virtual
-# En Linux/Mac
+# 3. Activate the environment virtual
+# On Linux/Mac
 source venv/bin/activate
-# En Windows
+# On Windows
 venv\Scripts\activate
 
-# 4. Instala las dependencias
+# 4. Install Dependencies
 pip install -r requirements.txt
 
-# 5. Crea el archivo .env con tus variables de entorno
+# 5. Create the .env file with your environment variables
 cp .env.example .env
-# Edita el archivo .env con tus valores de producción
+# Edit the .env file with your production values
 
-# 6. Ejecuta la aplicación con Gunicorn (para producción)
+# 6. Run the application with Gunicorn (for production)
 pip install gunicorn
 gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000
 ```
 
-### 4. Configuración de Seguridad
+### 4. Security Configuration
 
-- Asegúrate de configurar los grupos de seguridad de EC2 para permitir tráfico en el puerto 8000
-- Considera usar un balanceador de carga y HTTPS para producción
-- Configura un nombre de dominio y SSL con Let's Encrypt
+- Make sure you configure EC2 security groups to allow traffic on port 8000
+- Consider using a load balancer and HTTPS for production
+- Set up a domain name and SSL with Let's Encrypt
 
-### 5. Monitoreo y Mantenimiento
+### 5. Monitoring and Maintenance
 
-- Configura CloudWatch para monitorear la instancia EC2
-- Implementa un sistema de logs centralizado
-- Configura alertas para errores y alto uso de recursos
+- Configure CloudWatch to monitor the EC2 instance
+- Implement a centralized logging system
+- Configure alerts for errors and high resource usage
 
-## Endpoints API
+## API Endpoints
 
-- `GET /health` - Verificar estado del servicio
-- `POST /auth/signup` - Registrar un nuevo usuario
-- `POST /auth/login` - Autenticar usuario y obtener token JWT
-- `GET /auth/me` - Obtener información del usuario actual (requiere autenticación)
+- `GET /health` - Check service status
+- `POST /auth/signup` - Register a new user
+- `POST /auth/login` - Authenticate the user and obtain a JWT token
+- `GET /auth/me` - Obtain information about the current user (requires authentication)
 
-## Estructura de la Base de Datos
+## Database Structure
 
-La aplicación utiliza una única tabla `users` con los siguientes campos:
+The application uses a single `users` table with the following fields:
 
-| Campo | Tipo | Descripción |
+| Field | Type | Description |
 |-------|------|-------------|
-| id | UUID | Identificador único (clave primaria) |
-| email | VARCHAR | Email del usuario (unique) |
-| username | VARCHAR | Nombre de usuario (unique, opcional) |
-| hashed_password | VARCHAR | Contraseña encriptada |
-| full_name | VARCHAR | Nombre completo (opcional) |
-| is_active | BOOLEAN | Si el usuario está activo |
-| is_superuser | BOOLEAN | Si el usuario tiene privilegios de administrador |
-| created_at | TIMESTAMP | Fecha de creación |
-| updated_at | TIMESTAMP | Fecha de última actualización |
+| id | UUID | Unique identifier (primary key) |
+| email | VARCHAR | User email (unique) |
+| username | VARCHAR | Username (unique, optional) |
+| hashed_password | VARCHAR | Encrypted password |
+| full_name | VARCHAR | Full name (optional) |
+| is_active | BOOLEAN | If the user is active |
+| is_superuser | BOOLEAN | If the user has administrator privileges |
+| created_at | TIMESTAMP | Creation date |
+| updated_at | TIMESTAMP | Last updated date |
 
 # Install dependencies
 pip install -r requirements.txt

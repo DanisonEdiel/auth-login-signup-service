@@ -15,5 +15,3 @@ if ($AWS_SESSION_TOKEN -ne "") {
     $env:AWS_SESSION_TOKEN = $AWS_SESSION_TOKEN
 }
 
-Write-Host "Variables de entorno AWS configuradas correctamente."
-Write-Host "Ahora puedes ejecutar: terraform plan o terraform apply"

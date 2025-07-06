@@ -38,9 +38,9 @@ ENV/
 # Local environment variables
 .env
 .terraform/
-
+.terraform.tfvars
 # AWS credentials
-set-aws-credentials.ps1
+.set-aws-credentials.ps1
 *.tfvars
 *.tfstate
 *.tfstate.backup
