@@ -78,7 +78,8 @@ jobs:
             cat > .env << EOL
             MESSAGE_BROKER_URL=${{ secrets.MESSAGE_BROKER_URL || 'kafka:9092' }}
             JWT_SECRET=${{ secrets.JWT_SECRET || 'generate-a-secure-random-key-for-production' }}
-            DATABASE_URL=${{ secrets.DATABASE_URL || 'postgresql://postgres:Uzumymw260916_@postgres:5432/users_db' }}
+            DATABASE_URL=${{ secrets.DATABASE_URL || 'postgresql://postgres:Uzumymw260916_@auth-db.cyllotifqg8b.us-east-1.rds.amazonaws.com:5432/auth_db' }}
+            DATABASE_URL=${{ secrets.DATABASE_URL || 'postgresql://postgres:Uzumymw260916_@auth-db.cyllotifqg8b.us-east-1.rds.amazonaws.com:5432/auth-db' }}
             
             # Configuración para envío de correos
             SMTP_SERVER=${{ secrets.SMTP_SERVER || 'masapantaandres@gmail.com' }}
@@ -103,15 +104,13 @@ jobs:
             
             services:
               app:
-                image: danisonediel/auth-login-signup-service:latest
+                image: ${{ secrets.DOCKERHUB_USERNAME }}/auth-login-signup-service:latest
                 container_name: app
                 restart: always
                 ports:
                   - "8000:8000"
                 env_file:
                   - .env
-                depends_on:
-                  - postgres
                 networks:
                   - auth-network
               
@@ -120,7 +119,7 @@ jobs:
                 container_name: auth-db
                 restart: always
                 environment:
-                  POSTGRES_DB: users_db
+                  POSTGRES_DB: auth_db
                   POSTGRES_USER: postgres
                   POSTGRES_PASSWORD: Uzumymw260916_
                 ports:
@@ -129,11 +128,6 @@ jobs:
                   - postgres-data:/var/lib/postgresql/data
                 networks:
                   - auth-network
-                healthcheck:
-                  test: ["CMD-SHELL", "pg_isready -U postgres -d users_db"]
-                  interval: 10s
-                  timeout: 5s
-                  retries: 5
             
             volumes:
               postgres-data:
@@ -155,19 +149,10 @@ jobs:
             echo "Eliminando docker-compose.override.yml si existe..."
             rm -f docker-compose.override.yml
             
-            # Iniciar servicios
+            # Iniciar servicios con recreación forzada
             echo "Iniciando servicios..."
-            sudo docker-compose up -d
-            
-            # Esperar a que la base de datos esté lista
-            echo "Esperando a que la base de datos esté lista..."
-            sleep 10
-            
-            # Inicializar la base de datos
-            echo "Inicializando base de datos..."
-            sudo docker-compose exec -T app python init_db.py || echo "No se pudo inicializar la base de datos, es posible que ya esté inicializada"
-            
-            echo "Despliegue completado con éxito!"
+            sudo docker compose down --volumes || true
+            sudo docker compose up -d --force-recreate
             
             # Esperar a que los contenedores estén en funcionamiento
             echo "Esperando a que los contenedores estén en funcionamiento..."
@@ -196,4 +181,3 @@ jobs:
             echo "Volúmenes Docker:"
             sudo docker volume ls
             echo "Logs detallados del contenedor app (últimas 50 líneas):"
-            sudo docker logs app --tail 50 || echo "No se pudo obtener logs del contenedor app"
