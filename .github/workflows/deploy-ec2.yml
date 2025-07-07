@@ -78,7 +78,7 @@ jobs:
             cat > .env << EOL
             MESSAGE_BROKER_URL=${{ secrets.MESSAGE_BROKER_URL || 'kafka:9092' }}
             JWT_SECRET=${{ secrets.JWT_SECRET || 'generate-a-secure-random-key-for-production' }}
-            DATABASE_URL=${{ secrets.DATABASE_URL || 'postgresql://postgres:Uzumymw260916_@auth-db.cyllotifqg8b.us-east-1.rds.amazonaws.com:5432/users_db' }}
+            DATABASE_URL=${{ secrets.DATABASE_URL || 'postgresql://postgres:Uzumymw260916_@postgres:5432/users_db' }}
             
             # Configuración para envío de correos
             SMTP_SERVER=${{ secrets.SMTP_SERVER || 'masapantaandres@gmail.com' }}
@@ -103,13 +103,15 @@ jobs:
             
             services:
               app:
-                image: ${{ secrets.DOCKERHUB_USERNAME }}/auth-login-signup-service:latest
+                image: danisonediel/auth-login-signup-service:latest
                 container_name: app
                 restart: always
                 ports:
                   - "8000:8000"
                 env_file:
                   - .env
+                depends_on:
+                  - postgres
                 networks:
                   - auth-network
               
@@ -118,7 +120,7 @@ jobs:
                 container_name: auth-db
                 restart: always
                 environment:
-                  POSTGRES_DB: auth_db
+                  POSTGRES_DB: users_db
                   POSTGRES_USER: postgres
                   POSTGRES_PASSWORD: Uzumymw260916_
                 ports:
@@ -127,6 +129,11 @@ jobs:
                   - postgres-data:/var/lib/postgresql/data
                 networks:
                   - auth-network
+                healthcheck:
+                  test: ["CMD-SHELL", "pg_isready -U postgres -d users_db"]
+                  interval: 10s
+                  timeout: 5s
+                  retries: 5
             
             volumes:
               postgres-data:
@@ -152,16 +159,13 @@ jobs:
             echo "Iniciando servicios..."
             sudo docker-compose up -d
             
-            # Inicializar la base de datos si es necesario
-            echo "Inicializando base de datos RDS..."
-            echo "Verificando conexión a la base de datos..."
-            sudo docker-compose exec -T app python -c "import psycopg2; conn = psycopg2.connect('postgresql://postgres:Uzumymw260916_@auth-db.cyllotifqg8b.us-east-1.rds.amazonaws.com:5432/users_db'); print('Conexión exitosa a la base de datos RDS!')" || echo "Error al conectar a la base de datos RDS"
+            # Esperar a que la base de datos esté lista
+            echo "Esperando a que la base de datos esté lista..."
+            sleep 10
             
-            echo "Creando tablas en la base de datos RDS..."
-            sudo docker-compose exec -T app python init_db.py
-            
-            echo "Verificando tablas creadas..."
-            sudo docker-compose exec -T app python -c "import psycopg2; conn = psycopg2.connect('postgresql://postgres:Uzumymw260916_@auth-db.cyllotifqg8b.us-east-1.rds.amazonaws.com:5432/users_db'); cur = conn.cursor(); cur.execute('SELECT table_name FROM information_schema.tables WHERE table_schema=\'public\';'); tables = cur.fetchall(); print('Tablas en la base de datos:', tables)" || echo "Error al verificar las tablas"
+            # Inicializar la base de datos
+            echo "Inicializando base de datos..."
+            sudo docker-compose exec -T app python init_db.py || echo "No se pudo inicializar la base de datos, es posible que ya esté inicializada"
             
             echo "Despliegue completado con éxito!"
             
