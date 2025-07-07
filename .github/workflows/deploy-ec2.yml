@@ -120,7 +120,7 @@ jobs:
                 environment:
                   POSTGRES_DB: auth_db
                   POSTGRES_USER: postgres
-                  POSTGRES_PASSWORD: Uzumymw260916_
+                  POSTGRES_PASSWORD: postgres
                 ports:
                   - "5432:5432"
                 volumes:
@@ -153,13 +153,21 @@ jobs:
             sudo docker compose down --volumes || true
             sudo docker compose up -d --force-recreate
             
-            # Inicializar la base de datos RDS con SQL directo
-            echo "Inicializando la base de datos RDS con SQL directo..."
-            sudo docker-compose exec -T app python init_rds_db.py || echo "Error al inicializar la base de datos RDS"
+            # Instalar dependencias para el script de inicialización directa
+            echo "Instalando dependencias para el script de inicialización directa..."
+            sudo pip install psycopg2-binary || true
+            
+            # Inicializar la base de datos RDS directamente (sin depender del contenedor)
+            echo "Inicializando la base de datos RDS directamente..."
+            python init_rds_direct.py || echo "Error al inicializar la base de datos RDS directamente"
+            
+            # Inicializar la base de datos RDS desde el contenedor (como respaldo)
+            echo "Inicializando la base de datos RDS desde el contenedor..."
+            sudo docker compose exec -T app python init_rds_db.py || echo "Error al inicializar la base de datos RDS desde el contenedor"
             
             # Verificar que la aplicación puede conectarse a la base de datos RDS
             echo "Verificando que la aplicación puede conectarse a la base de datos RDS..."
-            sudo docker-compose exec -T app python -c "from app.db.database import get_db; next(get_db()); print('La aplicación puede conectarse a la base de datos RDS!')" || echo "Error: La aplicación no puede conectarse a la base de datos RDS"
+            sudo docker compose exec -T app python -c "from app.db.database import get_db; next(get_db()); print('La aplicación puede conectarse a la base de datos RDS!')" || echo "Error: La aplicación no puede conectarse a la base de datos RDS"
             
             # Esperar a que los contenedores estén en funcionamiento
             echo "Esperando a que los contenedores estén en funcionamiento..."
