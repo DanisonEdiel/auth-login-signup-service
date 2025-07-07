@@ -78,7 +78,7 @@ jobs:
             cat > .env << EOL
             MESSAGE_BROKER_URL=${{ secrets.MESSAGE_BROKER_URL || 'kafka:9092' }}
             JWT_SECRET=${{ secrets.JWT_SECRET || 'generate-a-secure-random-key-for-production' }}
-            DATABASE_URL=${{ secrets.DATABASE_URL || 'postgresql://postgres:Uzumymw260916_@auth-db.cyllotifqg8b.us-east-1.rds.amazonaws.com:5432/auth_db' }}
+            DATABASE_URL=${{ secrets.DATABASE_URL || 'postgresql://postgres:Uzumymw260916_@auth-db.cyllotifqg8b.us-east-1.rds.amazonaws.com:5432/auth-db' }}
             
             # Configuración para envío de correos
             SMTP_SERVER=${{ secrets.SMTP_SERVER || 'masapantaandres@gmail.com' }}
