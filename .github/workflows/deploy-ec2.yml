@@ -140,7 +140,7 @@ jobs:
             echo "Contenido de docker-compose.yml:"
             cat docker-compose.yml
             
-            # Eliminar la red existente si hay problemas
+            # Eliminar la red existente si hay problems
             echo "Eliminando red existente si existe..."
             sudo docker network rm auth-network || true
             
