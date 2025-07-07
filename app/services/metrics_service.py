@@ -11,7 +11,7 @@ class GrafanaMetricsService:
     """
     Service for sending metrics to Grafana Cloud
     """
-
+    
     def __init__(self):
         self.enabled = settings.GRAFANA_ENABLED
         # Configuración para Grafana Cloud
@@ -24,7 +24,7 @@ class GrafanaMetricsService:
         self.app_name = settings.PROJECT_NAME
         self.environment = settings.ENVIRONMENT
         self.metrics = {}
-
+        
     def initialize(self):
         """
         Initialize metrics service
@@ -32,7 +32,7 @@ class GrafanaMetricsService:
         if not self.enabled:
             logger.info("Grafana metrics disabled")
             return
-
+            
         try:
             # Verificar que podemos conectarnos a Grafana Cloud
             response = requests.get(
@@ -40,30 +40,30 @@ class GrafanaMetricsService:
                 headers=self.headers,
                 timeout=5
             )
-
+            
             if response.status_code == 200:
                 logger.info("Connected to Grafana Cloud successfully")
             else:
                 logger.warning(f"Grafana Cloud health check failed: {response.status_code}")
-
+                
         except Exception as e:
             logger.error(f"Failed to connect to Grafana Cloud: {str(e)}")
-
+            
         # Registrar inicio de la aplicación
         self._send_annotation({
             "text": "Application started",
             "tags": ["startup", self.app_name, self.environment]
         })
-
+            
     def record_login(self, user_id: str, success: bool):
         """
         Record login attempt
         """
         if not self.enabled:
             return
-
+            
         timestamp = int(time.time() * 1000)
-
+        
         try:
             # Enviar métrica de login a Grafana Cloud
             metric_data = {
@@ -77,28 +77,28 @@ class GrafanaMetricsService:
                     {"key": "environment", "value": self.environment}
                 ]
             }
-
+            
             self._send_metric(metric_data)
-
+            
             # Si el login fue exitoso, enviar una anotación
             if success:
                 self._send_annotation({
                     "text": f"User {user_id} logged in successfully",
                     "tags": ["login", "success", self.app_name]
                 })
-
+            
         except Exception as e:
             logger.error(f"Failed to record login metric: {str(e)}")
-
+            
     def record_request(self, method: str, path: str, status_code: int, duration_ms: float):
         """
         Record API request
         """
         if not self.enabled:
             return
-
+            
         timestamp = int(time.time() * 1000)
-
+        
         try:
             # Enviar métrica de solicitud a Grafana Cloud
             request_metric = {
@@ -113,9 +113,9 @@ class GrafanaMetricsService:
                     {"key": "environment", "value": self.environment}
                 ]
             }
-
+            
             self._send_metric(request_metric)
-
+            
             # Enviar métrica de duración
             duration_metric = {
                 "name": "http_request_duration_ms",
@@ -129,19 +129,19 @@ class GrafanaMetricsService:
                     {"key": "environment", "value": self.environment}
                 ]
             }
-
+            
             self._send_metric(duration_metric)
-
+            
             # Si es un error (4xx o 5xx), enviar una anotación
             if status_code >= 400:
                 self._send_annotation({
                     "text": f"Error {status_code} on {method} {path}",
                     "tags": ["error", f"status-{status_code}", self.app_name]
                 })
-
+            
         except Exception as e:
             logger.error(f"Failed to record request metric: {str(e)}")
-
+            
     def _send_metric(self, metric_data):
         """
         Send metric to Grafana Cloud
@@ -149,7 +149,7 @@ class GrafanaMetricsService:
         if not self.api_key:
             logger.warning("Grafana API key not configured, skipping metric")
             return
-
+            
         try:
             # Formato para Grafana Cloud
             payload = {
@@ -160,7 +160,7 @@ class GrafanaMetricsService:
                     "tags": metric_data["tags"]
                 }]
             }
-
+            
             # Enviar a Grafana Cloud
             response = requests.post(
                 f"{self.base_url}/api/v1/metrics",
@@ -168,15 +168,15 @@ class GrafanaMetricsService:
                 json=payload,
                 timeout=5
             )
-
+            
             if response.status_code not in (200, 201, 202):
                 logger.warning(f"Failed to send metric to Grafana Cloud: {response.status_code} - {response.text}")
             else:
                 logger.debug(f"Metric sent successfully to Grafana Cloud: {metric_data['name']}")
-
+                
         except Exception as e:
             logger.error(f"Error sending metric to Grafana Cloud: {str(e)}")
-
+            
     def _send_annotation(self, annotation_data):
         """
         Send annotation to Grafana Cloud
@@ -184,7 +184,7 @@ class GrafanaMetricsService:
         if not self.api_key:
             logger.warning("Grafana API key not configured, skipping annotation")
             return
-
+            
         try:
             # Formato para anotaciones de Grafana
             payload = {
@@ -193,7 +193,7 @@ class GrafanaMetricsService:
                 "time": int(time.time() * 1000),
                 "timeEnd": int(time.time() * 1000)
             }
-
+            
             # Enviar a Grafana Cloud
             response = requests.post(
                 f"{self.base_url}/api/annotations",
@@ -201,12 +201,12 @@ class GrafanaMetricsService:
                 json=payload,
                 timeout=5
             )
-
+            
             if response.status_code not in (200, 201, 202):
                 logger.warning(f"Failed to send annotation to Grafana Cloud: {response.status_code} - {response.text}")
             else:
                 logger.debug(f"Annotation sent successfully to Grafana Cloud: {annotation_data['text']}")
-
+                
         except Exception as e:
             logger.error(f"Error sending annotation to Grafana Cloud: {str(e)}")
 
