@@ -19,8 +19,8 @@ DB_HOST = os.getenv("DB_HOST", "auth-db.cyllotifqg8b.us-east-1.rds.amazonaws.com
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "users_db")
 DB_USER = os.getenv("DB_USER", "postgres")
-# Corregir la contraseña - probablemente la contraseña original no era correcta
-DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
+# Restaurar la contraseña original según la documentación
+DB_PASSWORD = os.getenv("DB_PASSWORD", "Uzumymw260916_")
 
 # Ruta al archivo SQL
 SQL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "init_db.sql")

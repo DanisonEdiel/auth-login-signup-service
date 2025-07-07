@@ -26,7 +26,7 @@ class Settings(BaseSettings):
         return PostgresDsn.build(
             scheme="postgresql",
             username=os.getenv("POSTGRES_USER", "postgres"),
-            password=os.getenv("POSTGRES_PASSWORD", "postgres"),
+            password=os.getenv("POSTGRES_PASSWORD", "Uzumymw260916_"),
             host=os.getenv("POSTGRES_HOST", "localhost"),
             port=os.getenv("POSTGRES_PORT", "5432"),
             path=f"/{os.getenv('POSTGRES_DB', 'users_db')}",
